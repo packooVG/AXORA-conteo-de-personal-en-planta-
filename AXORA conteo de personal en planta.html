@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AXORA · Control de Personal en Planta</title>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+    </script>
+    <style>
+        /* ============================================================
+           RESET Y FUENTE
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
+        .header {
+            background: #0f0f0f;
+            border-bottom: 2px solid #1f1f1f;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo {
+            background: #ff0000;
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 16px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.25);
+        }
+
+        .header h1 {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            color: #ffffff;
+        }
+
+        .header h1 span {
+            color: #22c55e;
+        }
+
+        .header h1 .sub {
+            font-weight: 400;
+            font-size: 11px;
+            color: #666666;
+            margin-left: 6px;
+            display: inline-block;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .clock {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #aaaaaa;
+            background: #1a1a1a;
+            padding: 4px 12px;
+            border-radius: 40px;
+            border: 1px solid #2a2a2a;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #1a1a1a;
+            padding: 4px 12px;
+            border-radius: 40px;
+            border: 1px solid #2a2a2a;
+        }
+
+        .status .dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%,
+            100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+
+        .status span {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #888888;
+        }
+
+        .btn-config {
+            background: transparent;
+            border: 1px solid #2a2a2a;
+            color: #888888;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-config:hover {
+            background: #1a1a1a;
+            color: #ffffff;
+            border-color: #4a4a4a;
+        }
+
+        /* ============================================================
+           CONTENIDO PRINCIPAL
+           ============================================================ */
+        .main {
+            flex: 1;
+            padding: 16px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* ============================================================
+           DASHBOARD (sección que se captura)
+           ============================================================ */
+        #dashboard-capture {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #0a0a0a;
+            padding: 8px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            min-height: 400px;
+        }
+
+        /* ============================================================
+           CONTADOR GIGANTE + DESGLOSE
+           ============================================================ */
+        .top-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .top-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .counter-card {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 20px;
+            padding: 24px 20px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .counter-card .glow {
+            position: absolute;
+            top: -30%;
+            right: -20%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.05), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .counter-card .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #777777;
+            margin-bottom: 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .counter-number {
+            font-size: 120px;
+            font-weight: 900;
+            color: #ffffff;
+            line-height: 1;
+            letter-spacing: -4px;
+            text-shadow: 0 0 60px rgba(34, 197, 94, 0.06), 0 4px 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 1;
+            transition: text-shadow 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .counter-number { font-size: 90px; }
+        }
+        @media (max-width: 480px) {
+            .counter-number { font-size: 72px; letter-spacing: -2px; }
+        }
+
+        .counter-meta {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666666;
+            position: relative;
+            z-index: 1;
+        }
+
+        .counter-meta strong {
+            color: #dddddd;
+            font-weight: 500;
+        }
+
+        /* DESGLOSE - Tamaño optimizado para captura */
+        .desglose-card {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 20px;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .desglose-card .grupo {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .desglose-card .grupo .titulo {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #888888;
+            border-bottom: 1px solid #2a2a2a;
+            padding-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .desglose-card .grupo .titulo .total {
+            color: #22c55e;
+            font-weight: 700;
+        }
+
+        .desglose-fila {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            font-size: 13px;
+            color: #bbbbbb;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .desglose-fila .valor {
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .desglose-total {
+            border-top: 2px solid #2a2a2a;
+            margin-top: 4px;
+            padding-top: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            color: #dddddd;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .desglose-total .valor {
+            color: #22c55e;
+            font-size: 18px;
+        }
+
+        /* ============================================================
+           BOTONES
+           ============================================================ */
+        .emergencia-wrapper {
+            width: 100%;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-emergencia {
+            background: #ff0000;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 14px;
+            flex: 2;
+            min-width: 180px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);
+            animation: pulse-emergencia 1.6s infinite;
+            position: relative;
+        }
+
+        .btn-emergencia:hover {
+            background: #cc0000;
+            transform: scale(1.02);
+        }
+
+        .btn-emergencia:active {
+            transform: scale(0.96);
+        }
+
+        .btn-emergencia .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top: 3px solid #ffffff;
+            border-radius: 50%;
+            animation: girar 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes girar {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse-emergencia {
+            0%,
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.25); }
+            50% { box-shadow: 0 0 0 20px rgba(255, 0, 0, 0); }
+        }
+
+        .btn-whatsapp {
+            background: #25D366;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 14px;
+            flex: 1;
+            min-width: 140px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 0 25px rgba(37, 211, 102, 0.15);
+        }
+
+        .btn-whatsapp:hover {
+            background: #1ebe5a;
+            transform: scale(1.02);
+        }
+
+        .btn-whatsapp:active {
+            transform: scale(0.96);
+        }
+
+        /* ============================================================
+           CONTROLES DE AJUSTE
+           ============================================================ */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .control-card {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 16px 18px;
+        }
+
+        .control-card .header-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #2a2a2a;
+            padding-bottom: 10px;
+        }
+
+        .control-card .header-control h3 {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #888888;
+        }
+
+        .control-card .header-control .reset-btn {
+            background: transparent;
+            border: 1px solid #2a2a2a;
+            color: #777777;
+            padding: 3px 12px;
+            border-radius: 40px;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-card .header-control .reset-btn:hover {
+            background: #222222;
+            color: #ff4444;
+            border-color: #ff4444;
+        }
+
+        .control-fila {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .control-fila .nombre {
+            font-size: 13px;
+            color: #bbbbbb;
+            min-width: 80px;
+        }
+
+        .control-fila .controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .control-fila .controls button {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 50%;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .control-fila .controls button:active {
+            transform: scale(0.85);
+        }
+
+        .control-fila .controls .btn-mas {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        .control-fila .controls .btn-mas:hover {
+            background: rgba(34, 197, 94, 0.35);
+        }
+
+        .control-fila .controls .btn-menos {
+            background: rgba(255, 34, 34, 0.2);
+            color: #ff2222;
+        }
+        .control-fila .controls .btn-menos:hover {
+            background: rgba(255, 34, 34, 0.35);
+        }
+
+        .control-fila .controls .btn-cero {
+            background: rgba(74, 111, 165, 0.15);
+            color: #4a6fa5;
+            font-size: 10px;
+            font-weight: 700;
+            width: 26px;
+            height: 26px;
+        }
+        .control-fila .controls .btn-cero:hover {
+            background: rgba(74, 111, 165, 0.25);
+        }
+
+        .control-fila .controls .valor-editable {
+            font-weight: 700;
+            font-size: 17px;
+            color: #ffffff;
+            min-width: 30px;
+            text-align: center;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: background 0.15s;
+            user-select: none;
+        }
+
+        .control-fila .controls .valor-editable:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .control-fila .controls .valor-editable-input {
+            width: 50px;
+            padding: 3px 6px;
+            background: #1a1a1a;
+            border: 2px solid #4a6fa5;
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .control-fila .controls .valor-editable-input::-webkit-inner-spin-button,
+        .control-fila .controls .valor-editable-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .control-fila .controls .valor-editable-input:focus {
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+            border-color: #22c55e;
+        }
+
+        /* ============================================================
+           BARRA DE CONTROL GLOBAL
+           ============================================================ */
+        .global-bar {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 14px;
+            padding: 12px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .global-bar .group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-global {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #1a1a1a;
+            color: #aaaaaa;
+            border: 1px solid #2a2a2a;
+        }
+
+        .btn-global:hover {
+            background: #222222;
+            color: #ffffff;
+            border-color: #4a4a4a;
+        }
+
+        .btn-global-primary {
+            background: rgba(34, 197, 94, 0.12);
+            color: #22c55e;
+            border-color: rgba(34, 197, 94, 0.15);
+        }
+
+        .btn-global-primary:hover {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: #22c55e;
+        }
+
+        .btn-global-danger {
+            background: rgba(255, 0, 0, 0.12);
+            color: #ff0000;
+            border-color: rgba(255, 0, 0, 0.15);
+        }
+
+        .btn-global-danger:hover {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: #ff0000;
+        }
+
+        .global-bar .info {
+            font-size: 11px;
+            color: #666666;
+        }
+
+        .global-bar .info strong {
+            color: #aaaaaa;
+            font-weight: 500;
+        }
+
+        /* ============================================================
+           MODAL
+           ============================================================ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 16px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 20px;
+            padding: 24px 28px;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal .subtitle {
+            font-size: 13px;
+            color: #777777;
+            margin-bottom: 18px;
+            border-bottom: 1px solid #2a2a2a;
+            padding-bottom: 12px;
+        }
+
+        .modal .campo {
+            margin-bottom: 14px;
+        }
+
+        .modal .campo label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #aaaaaa;
+            margin-bottom: 4px;
+        }
+
+        .modal .campo input,
+        .modal .campo select {
+            width: 100%;
+            padding: 8px 12px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 14px;
+            transition: border 0.2s;
+        }
+
+        .modal .campo input:focus,
+        .modal .campo select:focus {
+            outline: none;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+
+        .modal .campo .hint {
+            font-size: 11px;
+            color: #555555;
+            margin-top: 3px;
+        }
+
+        .modal .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+            border-top: 1px solid #2a2a2a;
+            padding-top: 16px;
+        }
+
+        .modal .modal-actions button {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal .modal-actions .btn-cerrar {
+            background: #1a1a1a;
+            color: #aaaaaa;
+            border: 1px solid #2a2a2a;
+            flex: 1;
+        }
+
+        .modal .modal-actions .btn-cerrar:hover {
+            background: #222222;
+            color: #ffffff;
+        }
+
+        .modal .modal-actions .btn-guardar {
+            background: #22c55e;
+            color: #ffffff;
+            flex: 2;
+        }
+
+        .modal .modal-actions .btn-guardar:hover {
+            background: #16a34a;
+        }
+
+        /* ============================================================
+           LOG
+           ============================================================ */
+        .log-card {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 14px;
+            padding: 12px 16px;
+        }
+
+        .log-card .header-log {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .log-card .header-log h4 {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #666666;
+        }
+
+        .log-card .header-log button {
+            background: transparent;
+            border: none;
+            color: #555555;
+            font-size: 10px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .log-card .header-log button:hover {
+            color: #aaaaaa;
+        }
+
+        .log-container {
+            max-height: 80px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .log-container::-webkit-scrollbar {
+            width: 3px;
+        }
+        .log-container::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        .log-container::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+            border-radius: 10px;
+        }
+
+        .log-entry {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #777777;
+            padding: 3px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .log-entry .hora {
+            font-family: monospace;
+            color: #444444;
+        }
+
+        .log-entry .accion {
+            color: #999999;
+        }
+
+        .log-entry .accion .cat {
+            color: #dddddd;
+            font-weight: 600;
+        }
+
+        .log-entry .accion .val {
+            color: #22c55e;
+            font-weight: 600;
+        }
+
+        .log-empty {
+            text-align: center;
+            color: #444444;
+            font-size: 11px;
+            padding: 10px 0;
+        }
+
+        /* ============================================================
+           TOAST
+           ============================================================ */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1a1a1a;
+            color: #eeeeee;
+            padding: 12px 24px;
+            border-radius: 60px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+            z-index: 999;
+            border: 1px solid #2a2a2a;
+            backdrop-filter: blur(8px);
+            max-width: 90%;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success { border-left: 4px solid #22c55e; }
+        .toast.error { border-left: 4px solid #ff0000; }
+        .toast.warning { border-left: 4px solid #ffaa00; }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
+        .footer {
+            text-align: right;
+            padding: 10px 16px;
+            font-size: 9px;
+            color: #333333;
+            border-top: 1px solid #1a1a1a;
+            margin-top: 8px;
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+        @media (max-width: 480px) {
+            .header h1 .sub {
+                display: none;
+            }
+            .counter-number {
+                font-size: 72px;
+            }
+            .desglose-fila {
+                font-size: 12px;
+            }
+            .control-fila .nombre {
+                font-size: 12px;
+                min-width: 60px;
+            }
+            .control-fila .controls .valor-editable {
+                font-size: 15px;
+                min-width: 26px;
+            }
+            .control-fila .controls button {
+                width: 26px;
+                height: 26px;
+                font-size: 13px;
+            }
+            .btn-emergencia {
+                font-size: 15px;
+                padding: 12px 16px;
+            }
+            .btn-whatsapp {
+                font-size: 13px;
+                padding: 12px 16px;
+            }
+            .modal {
+                padding: 18px 16px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .counter-number {
+                font-size: 56px;
+            }
+            .header h1 {
+                font-size: 13px;
+            }
+            .logo {
+                font-size: 13px;
+                padding: 3px 8px;
+            }
+            .clock {
+                font-size: 10px;
+                padding: 3px 8px;
+            }
+        }
+
+        /* ANIMACIONES */
+        @keyframes fade-in {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animar-numero {
+            animation: fade-in 0.25s ease-out;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">AXORA</div>
+            <h1>
+                Control <span>Personal</span>
+                <span class="sub" id="plantaLabel">ALIMENTOS Y SALSAS</span>
+            </h1>
+        </div>
+        <div class="header-right">
+            <button class="btn-config" onclick="abrirConfiguracion()">⚙️</button>
+            <div class="clock" id="live-clock">--:--:--</div>
+            <div class="status">
+                <span class="dot"></span>
+                <span>En vivo</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MODAL CONFIGURACIÓN -->
+    <div class="modal-overlay" id="modalConfig">
+        <div class="modal">
+            <h2>⚙️ Configuración</h2>
+            <div class="subtitle">Ajusta los parámetros del sistema</div>
+
+            <div class="campo">
+                <label>📱 Número de WhatsApp</label>
+                <input type="text" id="cfg-whatsapp" placeholder="Ej. 5215512345678">
+                <div class="hint">Código de país sin + (Ej. 521 para México)</div>
+            </div>
+
+            <div class="campo">
+                <label>⏱️ Intervalo de actualización</label>
+                <select id="cfg-intervalo">
+                    <option value="0">Desactivado</option>
+                    <option value="5">5 minutos</option>
+                    <option value="10">10 minutos</option>
+                    <option value="15" selected>15 minutos</option>
+                    <option value="30">30 minutos</option>
+                    <option value="60">60 minutos</option>
+                </select>
+            </div>
+
+            <div class="campo">
+                <label>🏭 Nombre de la planta</label>
+                <input type="text" id="cfg-planta" placeholder="Ej. Alimentos y Salsas" value="ALIMENTOS Y SALSAS">
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cerrar" onclick="cerrarConfiguracion()">Cancelar</button>
+                <button class="btn-guardar" onclick="guardarConfiguracion()">💾 Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <!-- DASHBOARD CAPTURABLE -->
+        <div id="dashboard-capture">
+
+            <!-- CONTADOR + DESGLOSE -->
+            <section class="top-section">
+                <div class="counter-card" id="counterContainer">
+                    <div class="glow"></div>
+                    <div class="label">Personal en Planta</div>
+                    <div class="counter-number" id="totalPersonas">0</div>
+                    <div class="counter-meta">
+                        <span>🕒 <strong id="ultimaActualizacion">--:--:--</strong></span>
+                        <span>👤 <strong id="totalRegistros">0</strong></span>
+                    </div>
+                </div>
+
+                <div class="desglose-card">
+                    <div class="grupo">
+                        <div class="titulo">
+                            <span>🔹 Internos</span>
+                            <span class="total" id="totalInternos">0</span>
+                        </div>
+                        <div id="listaInternos"></div>
+                        <div class="desglose-total">
+                            <span>TOTAL</span>
+                            <span class="valor" id="totalInternosFooter">0</span>
+                        </div>
+                    </div>
+                    <div class="grupo">
+                        <div class="titulo">
+                            <span>🔸 Externos</span>
+                            <span class="total" id="totalExternos">0</span>
+                        </div>
+                        <div id="listaExternos"></div>
+                        <div class="desglose-total">
+                            <span>TOTAL</span>
+                            <span class="valor" id="totalExternosFooter">0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- BOTONES -->
+        <section class="emergencia-wrapper">
+            <button class="btn-emergencia" id="btnEmergencia" onclick="activarEmergencia()">
+                🚨 EMERGENCIA
+            </button>
+            <button class="btn-whatsapp" onclick="compartirWhatsAppConCaptura()">
+                📸 Captura + WhatsApp
+            </button>
+        </section>
+
+        <!-- CONTROLES DE AJUSTE -->
+        <section class="controls-grid">
+
+            <div class="control-card">
+                <div class="header-control">
+                    <h3>🔹 Internos</h3>
+                    <button class="reset-btn" onclick="reiniciarCategoria('interno')">Reiniciar</button>
+                </div>
+                <div id="controlesInternos"></div>
+            </div>
+
+            <div class="control-card">
+                <div class="header-control">
+                    <h3>🔸 Externos</h3>
+                    <button class="reset-btn" onclick="reiniciarCategoria('externo')">Reiniciar</button>
+                </div>
+                <div id="controlesExternos"></div>
+            </div>
+
+        </section>
+
+        <!-- BARRA DE CONTROL GLOBAL -->
+        <section class="global-bar">
+            <div class="group">
+                <button class="btn-global btn-global-primary" onclick="cargarValoresPorDefecto()">📋 Predeterminados</button>
+                <button class="btn-global btn-global-danger" onclick="reiniciarTodo()">⚠️ Reiniciar todo</button>
+            </div>
+            <div class="info">
+                Último cambio: <strong id="ultimoCambio">--:--:--</strong>
+                <span style="margin-left:12px;color:#444;">⏱️ <span id="intervaloLabel">15 min</span></span>
+            </div>
+        </section>
+
+        <!-- LOG -->
+        <section class="log-card">
+            <div class="header-log">
+                <h4>📋 Registro de cambios</h4>
+                <button onclick="limpiarLog()">Limpiar</button>
+            </div>
+            <div class="log-container" id="logContainer">
+                <div class="log-empty">No hay cambios registrados</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        AXORA · v11.0 · Correcciones críticas + mejoras UX
+    </footer>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================================
+            // 1. CATEGORÍAS
+            // ============================================================
+            const CATEGORIAS_INTERNAS = ['Directivos', 'Administrativos', 'Planta', 'Cursos'];
+            const CATEGORIAS_EXTERNAS = ['Transportistas', 'Visitantes', 'Contratistas', 'Proveedores', 'Practicantes'];
+
+            // ============================================================
+            // 2. VALORES PREDETERMINADOS
+            // ============================================================
+            const VALORES_PREDETERMINADOS = {
+                internos: { Directivos: 2, Administrativos: 27, Planta: 11, Cursos: 8 },
+                externos: { Transportistas: 9, Visitantes: 1, Contratistas: 15, Proveedores: 1, Practicantes: 2 }
+            };
+
+            // ============================================================
+            // 3. CONFIGURACIÓN
+            // ============================================================
+            const CONFIG_DEFECTO = {
+                whatsapp: '5215512345678',
+                intervalo: 15,
+                planta: 'ALIMENTOS Y SALSAS'
+            };
+
+            let config = { ...CONFIG_DEFECTO };
+
+            // ============================================================
+            // 4. ESTADO
+            // ============================================================
+            let datosContadores = {
+                internos: { ...VALORES_PREDETERMINADOS.internos },
+                externos: { ...VALORES_PREDETERMINADOS.externos }
+            };
+
+            let logCambios = [];
+            let timerInterval = null;
+            let estaGenerandoReporte = false;
+
+            // ============================================================
+            // 5. FUNCIONES AUXILIARES
+            // ============================================================
+            function hora() {
+                return new Date().toLocaleTimeString('es-MX', { hour12: false });
+            }
+
+            function horaCompleta() {
+                return new Date().toLocaleString('es-MX', { hour12: false });
+            }
+
+            function updateClock() {
+                document.getElementById('live-clock').textContent = hora();
+            }
+            setInterval(updateClock, 1000);
+            updateClock();
+
+            function calcularTotales() {
+                const totalInt = Object.values(datosContadores.internos).reduce((a, b) => a + b, 0);
+                const totalExt = Object.values(datosContadores.externos).reduce((a, b) => a + b, 0);
+                return { totalInt, totalExt, totalGeneral: totalInt + totalExt };
+            }
+
+            function toast(msg, tipo = 'success', dur = 2800) {
+                const el = document.getElementById('toast');
+                el.textContent = msg;
+                el.className = 'toast';
+                el.classList.add('visible');
+                if (tipo === 'error') el.classList.add('error');
+                if (tipo === 'warning') el.classList.add('warning');
+                clearTimeout(el._timeout);
+                el._timeout = setTimeout(() => el.classList.remove('visible'), dur);
+            }
+
+            function registrarCambio(tipo, categoria, valorAnterior, valorNuevo) {
+                const entry = {
+                    timestamp: horaCompleta(),
+                    tipo,
+                    categoria,
+                    valorAnterior,
+                    valorNuevo
+                };
+                logCambios.unshift(entry);
+                if (logCambios.length > 50) logCambios.pop();
+                renderizarLog();
+                document.getElementById('ultimoCambio').textContent = hora();
+            }
+
+            // ============================================================
+            // 6. CONFIGURACIÓN
+            // ============================================================
+            function cargarConfiguracion() {
+                try {
+                    const saved = localStorage.getItem('axora_config');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        config = { ...CONFIG_DEFECTO, ...parsed };
+                    }
+                } catch (e) { /* ignore */ }
+
+                document.getElementById('cfg-whatsapp').value = config.whatsapp || '';
+                document.getElementById('cfg-intervalo').value = config.intervalo || 15;
+                document.getElementById('cfg-planta').value = config.planta || 'ALIMENTOS Y SALSAS';
+
+                document.getElementById('plantaLabel').textContent = config.planta || 'ALIMENTOS Y SALSAS';
+                const intervalText = config.intervalo === 0 ? 'Desactivado' : `${config.intervalo} min`;
+                document.getElementById('intervaloLabel').textContent = intervalText;
+            }
+
+            window.guardarConfiguracion = function() {
+                const whatsapp = document.getElementById('cfg-whatsapp').value.trim();
+                if (!whatsapp) {
+                    toast('❌ El número de WhatsApp es obligatorio', 'error', 2500);
+                    return;
+                }
+
+                config.whatsapp = whatsapp;
+                config.intervalo = parseInt(document.getElementById('cfg-intervalo').value) || 0;
+                config.planta = document.getElementById('cfg-planta').value.trim() || 'ALIMENTOS Y SALSAS';
+
+                try {
+                    localStorage.setItem('axora_config', JSON.stringify(config));
+                } catch (e) { /* ignore */ }
+
+                document.getElementById('plantaLabel').textContent = config.planta;
+                const intervalText = config.intervalo === 0 ? 'Desactivado' : `${config.intervalo} min`;
+                document.getElementById('intervaloLabel').textContent = intervalText;
+
+                cerrarConfiguracion();
+                toast('✅ Configuración guardada', 'success', 2000);
+                iniciarTimer();
+            };
+
+            window.abrirConfiguracion = function() {
+                document.getElementById('modalConfig').classList.add('active');
+                document.getElementById('cfg-whatsapp').value = config.whatsapp || '';
+                document.getElementById('cfg-intervalo').value = config.intervalo || 15;
+                document.getElementById('cfg-planta').value = config.planta || 'ALIMENTOS Y SALSAS';
+            };
+
+            window.cerrarConfiguracion = function() {
+                document.getElementById('modalConfig').classList.remove('active');
+            };
+
+            // ============================================================
+            // 7. RENDERIZAR DESGLOSE
+            // ============================================================
+            function renderizarDesglose() {
+                const int = datosContadores.internos;
+                const ext = datosContadores.externos;
+
+                const contInt = document.getElementById('listaInternos');
+                contInt.innerHTML = '';
+                CATEGORIAS_INTERNAS.forEach(cat => {
+                    const div = document.createElement('div');
+                    div.className = 'desglose-fila';
+                    div.innerHTML = `
+                        <span>${cat}</span>
+                        <span class="valor">${int[cat] || 0}</span>
+                    `;
+                    contInt.appendChild(div);
+                });
+                const totalInt = Object.values(int).reduce((a, b) => a + b, 0);
+                document.getElementById('totalInternos').textContent = totalInt;
+                document.getElementById('totalInternosFooter').textContent = totalInt;
+
+                const contExt = document.getElementById('listaExternos');
+                contExt.innerHTML = '';
+                CATEGORIAS_EXTERNAS.forEach(cat => {
+                    const div = document.createElement('div');
+                    div.className = 'desglose-fila';
+                    div.innerHTML = `
+                        <span>${cat}</span>
+                        <span class="valor">${ext[cat] || 0}</span>
+                    `;
+                    contExt.appendChild(div);
+                });
+                const totalExt = Object.values(ext).reduce((a, b) => a + b, 0);
+                document.getElementById('totalExternos').textContent = totalExt;
+                document.getElementById('totalExternosFooter').textContent = totalExt;
+
+                const { totalGeneral } = calcularTotales();
+                document.getElementById('totalPersonas').textContent = totalGeneral;
+                document.getElementById('totalRegistros').textContent = totalInt + totalExt;
+
+                document.getElementById('ultimaActualizacion').textContent = hora();
+
+                try {
+                    localStorage.setItem('axora_contadores', JSON.stringify(datosContadores));
+                } catch (e) { /* ignore */ }
+            }
+
+            // ============================================================
+            // 8. RENDERIZAR CONTROLES (con validación de números negativos)
+            // ============================================================
+            function renderizarControles() {
+                const contInt = document.getElementById('controlesInternos');
+                contInt.innerHTML = '';
+                CATEGORIAS_INTERNAS.forEach(cat => {
+                    const div = document.createElement('div');
+                    div.className = 'control-fila';
+                    const valor = datosContadores.internos[cat] || 0;
+                    div.innerHTML = `
+                        <span class="nombre">${cat}</span>
+                        <div class="controls">
+                            <button class="btn-menos" onclick="cambiarContador('interno','${cat}',-1)">−</button>
+                            <span class="valor-editable" id="display-${cat}" data-tipo="interno" data-categoria="${cat}" onclick="activarEdicion(this)">${valor}</span>
+                            <button class="btn-mas" onclick="cambiarContador('interno','${cat}',1)">+</button>
+                            <button class="btn-cero" onclick="cambiarContador('interno','${cat}',0)">0</button>
+                        </div>
+                    `;
+                    contInt.appendChild(div);
+                });
+
+                const contExt = document.getElementById('controlesExternos');
+                contExt.innerHTML = '';
+                CATEGORIAS_EXTERNAS.forEach(cat => {
+                    const div = document.createElement('div');
+                    div.className = 'control-fila';
+                    const valor = datosContadores.externos[cat] || 0;
+                    div.innerHTML = `
+                        <span class="nombre">${cat}</span>
+                        <div class="controls">
+                            <button class="btn-menos" onclick="cambiarContador('externo','${cat}',-1)">−</button>
+                            <span class="valor-editable" id="display-${cat}" data-tipo="externo" data-categoria="${cat}" onclick="activarEdicion(this)">${valor}</span>
+                            <button class="btn-mas" onclick="cambiarContador('externo','${cat}',1)">+</button>
+                            <button class="btn-cero" onclick="cambiarContador('externo','${cat}',0)">0</button>
+                        </div>
+                    `;
+                    contExt.appendChild(div);
+                });
+            }
+
+            // ============================================================
+            // 9. EDICIÓN (con validación de números negativos)
+            // ============================================================
+            window.activarEdicion = function(element) {
+                if (element.querySelector('input')) return;
+
+                const tipo = element.dataset.tipo;
+                const categoria = element.dataset.categoria;
+                const valorActual = parseInt(element.textContent) || 0;
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.inputMode = 'numeric';
+                input.pattern = '[0-9]*';
+                input.className = 'valor-editable-input';
+                input.value = valorActual;
+
+                element.textContent = '';
+                element.appendChild(input);
+
+                input.focus();
+                input.select();
+
+                const aplicar = function() {
+                    let val = parseInt(input.value);
+                    // VALIDACIÓN: no permitir números negativos
+                    if (isNaN(val) || val < 0) val = 0;
+                    aplicarNumero(tipo, categoria, val);
+                };
+
+                input.addEventListener('blur', aplicar);
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        input.blur();
+                    }
+                });
+
+                input.addEventListener('input', function(e) {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+            };
+
+            function aplicarNumero(tipo, categoria, nuevoValor) {
+                const obj = tipo === 'interno' ? datosContadores.internos : datosContadores.externos;
+                const valorAnterior = obj[categoria] || 0;
+
+                // VALIDACIÓN: si es negativo, lo dejamos en 0
+                if (nuevoValor < 0) nuevoValor = 0;
+
+                if (nuevoValor === valorAnterior) {
+                    restaurarDisplay(tipo, categoria, valorAnterior);
+                    return;
+                }
+
+                obj[categoria] = nuevoValor;
+                registrarCambio(tipo, categoria, valorAnterior, nuevoValor);
+                renderizarDesglose();
+                renderizarControles();
+
+                // Animación
+                const el = document.getElementById(`display-${categoria}`);
+                if (el) {
+                    el.classList.remove('animar-numero');
+                    void el.offsetWidth;
+                    el.classList.add('animar-numero');
+                }
+
+                toast(`✏️ ${categoria}: ${valorAnterior} → ${nuevoValor}`, 'success', 1200);
+            }
+
+            function restaurarDisplay(tipo, categoria, valor) {
+                const element = document.getElementById(`display-${categoria}`);
+                if (element) {
+                    element.textContent = valor;
+                }
+            }
+
+            // ============================================================
+            // 10. CAMBIAR CONTADOR (con validación de números negativos)
+            // ============================================================
+            window.cambiarContador = function(tipo, categoria, delta) {
+                const obj = tipo === 'interno' ? datosContadores.internos : datosContadores.externos;
+                const valorAnterior = obj[categoria] || 0;
+                let val = valorAnterior + delta;
+                if (delta === 0) val = 0;
+                // VALIDACIÓN: no permitir números negativos
+                if (val < 0) val = 0;
+                obj[categoria] = val;
+
+                registrarCambio(tipo, categoria, valorAnterior, val);
+                renderizarDesglose();
+                renderizarControles();
+
+                // Animación del número
+                const el = document.getElementById(`display-${categoria}`);
+                if (el) {
+                    el.classList.remove('animar-numero');
+                    void el.offsetWidth;
+                    el.classList.add('animar-numero');
+                }
+
+                const nombreCat = categoria;
+                if (delta === 0) {
+                    toast(`↺ ${nombreCat}: 0`, 'warning', 1200);
+                } else if (delta > 0) {
+                    toast(`✅ ${nombreCat}: ${val} (+${delta})`, 'success', 1200);
+                } else {
+                    toast(`⬇️ ${nombreCat}: ${val} (${delta})`, 'warning', 1200);
+                }
+            };
+
+            // ============================================================
+            // 11. REINICIAR
+            // ============================================================
+            window.reiniciarCategoria = function(tipo) {
+                const obj = tipo === 'interno' ? datosContadores.internos : datosContadores.externos;
+                const cats = tipo === 'interno' ? CATEGORIAS_INTERNAS : CATEGORIAS_EXTERNAS;
+                const nombre = tipo === 'interno' ? 'Internos' : 'Externos';
+
+                if (!confirm(`¿Reiniciar TODOS los ${nombre} a 0?`)) return;
+
+                cats.forEach(cat => {
+                    const valorAnterior = obj[cat] || 0;
+                    obj[cat] = 0;
+                    registrarCambio(tipo, cat, valorAnterior, 0);
+                });
+
+                renderizarDesglose();
+                renderizarControles();
+                toast(`↺ ${nombre} reiniciados a 0`, 'warning', 2000);
+            };
+
+            window.reiniciarTodo = function() {
+                if (!confirm('⚠️ ¿Reiniciar TODOS los contadores a 0?')) return;
+
+                const todos = [
+                    ...CATEGORIAS_INTERNAS.map(c => ({ tipo: 'interno', cat: c })),
+                    ...CATEGORIAS_EXTERNAS.map(c => ({ tipo: 'externo', cat: c }))
+                ];
+
+                todos.forEach(({ tipo, cat }) => {
+                    const obj = tipo === 'interno' ? datosContadores.internos : datosContadores.externos;
+                    const valorAnterior = obj[cat] || 0;
+                    obj[cat] = 0;
+                    registrarCambio(tipo, cat, valorAnterior, 0);
+                });
+
+                renderizarDesglose();
+                renderizarControles();
+                toast('↺ Todos los contadores reiniciados a 0', 'warning', 2500);
+            };
+
+            window.cargarValoresPorDefecto = function() {
+                if (!confirm('¿Cargar los valores predeterminados?')) return;
+                datosContadores.internos = { ...VALORES_PREDETERMINADOS.internos };
+                datosContadores.externos = { ...VALORES_PREDETERMINADOS.externos };
+                renderizarDesglose();
+                renderizarControles();
+                toast('📋 Valores predeterminados cargados', 'success', 2000);
+            };
+
+            // ============================================================
+            // 12. REPORTE (con spinner y validaciones)
+            // ============================================================
+            function generarReporte() {
+                const int = datosContadores.internos;
+                const ext = datosContadores.externos;
+                const { totalInt, totalExt, totalGeneral } = calcularTotales();
+                const h = document.getElementById('ultimaActualizacion').textContent;
+                const planta = config.planta || 'ALIMENTOS Y SALSAS';
+
+                let txt = `🚨 *CONTROL DE PERSONAL - ${planta.toUpperCase()}* 🚨\n`;
+                txt += `Hora: ${h}\n`;
+                txt += `─────────────────────\n`;
+                txt += `*PERSONAS EN PLANTA: ${totalGeneral}*\n\n`;
+                txt += `🔹 *INTERNOS:* ${totalInt}\n`;
+                CATEGORIAS_INTERNAS.forEach(c => txt += `   ${c}: ${int[c] || 0}\n`);
+                txt += `\n🔸 *EXTERNOS:* ${totalExt}\n`;
+                CATEGORIAS_EXTERNAS.forEach(c => txt += `   ${c}: ${ext[c] || 0}\n`);
+                txt += `─────────────────────\n`;
+                txt += `*Última actualización:* ${h}`;
+
+                return txt;
+            }
+
+            window.copiarReporte = function() {
+                const reporte = generarReporte();
+                if (navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText(reporte).then(() => {
+                        toast('✅ Reporte copiado', 'success', 2500);
+                    }).catch(() => fallbackCopy(reporte));
+                } else {
+                    fallbackCopy(reporte);
+                }
+            };
+
+            function fallbackCopy(txt) {
+                const ta = document.createElement('textarea');
+                ta.value = txt;
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    toast('✅ Reporte copiado', 'success', 2500);
+                } catch (e) {
+                    toast('❌ Copia manual', 'error', 3000);
+                    console.log(txt);
+                }
+                document.body.removeChild(ta);
+            }
+
+            // ============================================================
+            // 13. EMERGENCIA CON SPINNER Y FALLBACK
+            // ============================================================
+            window.activarEmergencia = function() {
+                if (estaGenerandoReporte) return;
+                estaGenerandoReporte = true;
+
+                const btn = document.getElementById('btnEmergencia');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<span class="spinner"></span> Generando...';
+                btn.disabled = true;
+
+                // Copiar reporte primero (texto)
+                const reporte = generarReporte();
+
+                // Intentar captura, pero con fallback
+                const elemento = document.getElementById('dashboard-capture');
+
+                html2canvas(elemento, {
+                    scale: 2.5,
+                    backgroundColor: '#0a0a0a',
+                    allowTaint: true,
+                    useCORS: true,
+                    logging: false,
+                    width: 800,
+                    height: 500,
+                    windowWidth: 800,
+                    windowHeight: 500,
+                }).then(function(canvas) {
+                    const imagenData = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    const fecha = new Date().toISOString().slice(0, 10);
+                    const horaFormateada = hora().replace(/:/g, '-');
+                    link.download = `AXORA_Reporte_${fecha}_${horaFormateada}.png`;
+                    link.href = imagenData;
+                    document.body.appendChild(link);
+                    link.click();
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                    }, 1000);
+
+                    toast('✅ Reporte generado y captura descargada', 'success', 3000);
+
+                    // Abrir WhatsApp
+                    const numero = config.whatsapp || '5215512345678';
+                    const texto = encodeURIComponent(reporte + '%0A%0A📸 Adjunta la captura descargada');
+                    window.open(`https://api.whatsapp.com/send?phone=${numero}&text=${texto}`, '_blank');
+
+                    // Efecto visual
+                    const container = document.getElementById('counterContainer');
+                    container.style.transition = 'box-shadow 0.3s ease';
+                    container.style.boxShadow = '0 0 80px rgba(255, 0, 0, 0.3), inset 0 0 40px rgba(255,0,0,0.05)';
+                    setTimeout(() => { container.style.boxShadow = ''; }, 4000);
+
+                }).catch(function(error) {
+                    console.error('Error en captura:', error);
+                    toast('❌ Error en captura. Enviando solo texto.', 'error', 3000);
+                    // FALLBACK: enviar solo texto
+                    const numero = config.whatsapp || '5215512345678';
+                    const texto = encodeURIComponent(reporte);
+                    window.open(`https://api.whatsapp.com/send?phone=${numero}&text=${texto}`, '_blank');
+                }).finally(function() {
+                    estaGenerandoReporte = false;
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+            };
+
+            // ============================================================
+            // 14. COMPARTIR POR WHATSAPP (con validación)
+            // ============================================================
+            window.compartirWhatsAppConCaptura = function() {
+                const numero = config.whatsapp || '5215512345678';
+                if (!numero) {
+                    toast('❌ Configura un número de WhatsApp primero', 'error', 2500);
+                    return;
+                }
+
+                const reporte = generarReporte();
+                const texto = encodeURIComponent(reporte);
+                window.open(`https://api.whatsapp.com/send?phone=${numero}&text=${texto}`, '_blank');
+                toast('📱 Abriendo WhatsApp...', 'success', 2000);
+            };
+
+            // ============================================================
+            // 15. TIMER
+            // ============================================================
+            function iniciarTimer() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+
+                if (config.intervalo === 0 || !config.intervalo) {
+                    return;
+                }
+
+                timerInterval = setInterval(() => {
+                    renderizarDesglose();
+                    renderizarControles();
+                    toast('🔄 Actualización automática', 'warning', 1500);
+                }, config.intervalo * 60 * 1000);
+            }
+
+            // ============================================================
+            // 16. LOG
+            // ============================================================
+            function renderizarLog() {
+                const container = document.getElementById('logContainer');
+                if (logCambios.length === 0) {
+                    container.innerHTML = '<div class="log-empty">No hay cambios registrados</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                logCambios.slice(0, 20).forEach(entry => {
+                    const div = document.createElement('div');
+                    div.className = 'log-entry';
+                    const icono = entry.tipo === 'interno' ? '🔹' : '🔸';
+                    const accionText = entry.valorNuevo === 0 && entry.valorAnterior !== 0 ?
+                        `↺ ${entry.categoria}: ${entry.valorAnterior} → 0` :
+                        `${entry.categoria}: ${entry.valorAnterior} → ${entry.valorNuevo}`;
+                    div.innerHTML = `
+                        <span class="hora">${entry.timestamp}</span>
+                        <span class="accion">${icono} <span class="cat">${accionText}</span></span>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            window.limpiarLog = function() {
+                if (logCambios.length === 0) return;
+                if (!confirm('¿Limpiar el registro de cambios?')) return;
+                logCambios = [];
+                renderizarLog();
+                toast('🧹 Log limpiado', 'warning', 1500);
+            };
+
+            // ============================================================
+            // 17. INICIALIZACIÓN
+            // ============================================================
+            function init() {
+                cargarConfiguracion();
+
+                try {
+                    const saved = localStorage.getItem('axora_contadores');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (parsed.internos && parsed.externos) {
+                            datosContadores = parsed;
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+
+                try {
+                    const savedLog = localStorage.getItem('axora_log');
+                    if (savedLog) {
+                        const parsed = JSON.parse(savedLog);
+                        if (Array.isArray(parsed)) {
+                            logCambios = parsed;
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+
+                renderizarDesglose();
+                renderizarControles();
+                renderizarLog();
+                iniciarTimer();
+
+                setInterval(() => {
+                    try {
+                        localStorage.setItem('axora_log', JSON.stringify(logCambios));
+                    } catch (e) { /* ignore */ }
+                }, 10000);
+
+                console.log('✅ AXORA · v11.0 · Correcciones críticas');
+                console.log(`📱 WhatsApp: ${config.whatsapp}`);
+                console.log(`⏱️ Intervalo: ${config.intervalo === 0 ? 'Desactivado' : config.intervalo + ' min'}`);
+                console.log(`🏭 Planta: ${config.planta}`);
+            }
+
+            // Cerrar modal con ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') cerrarConfiguracion();
+            });
+
+            document.getElementById('modalConfig').addEventListener('click', function(e) {
+                if (e.target === this) cerrarConfiguracion();
+            });
+
+            init();
+
+        })();
+    </script>
+
+</body>
+</html>
